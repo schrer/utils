@@ -15,7 +15,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClassScannerTest {
-    private final static String DUMMY_PACKAGE = "at.schrer.inject.dummyclasses";
+    private static final String DUMMY_PACKAGE = "at.schrer.inject.dummyclasses";
 
     @Test
     void loadAllClasses() throws IOException, URISyntaxException, ClassNotFoundException {
