@@ -40,9 +40,13 @@ public class ClassScanner {
                 try(Stream<Path> pathStream = Files.list(path)) {
                     pathStream.forEach(paths::push);
                 }
-            } else if (Files.exists(path) && path.endsWith(".class")) {
+            } else if (Files.exists(path) && path.toString().endsWith(".class")) {
                 String fileName = path.getFileName().toString();
-                classes.add(Class.forName(scanPackage
+                String subDir = getSubPackage(path);
+                if (!subDir.isEmpty()) {
+                    subDir = subDir + ".";
+                }
+                classes.add(Class.forName(scanPackage + "." + subDir
                         + fileName.substring(0, fileName.length()-6)));
             }
         }
@@ -51,5 +55,15 @@ public class ClassScanner {
 
     private boolean hasAnnotation(Class<?> target, Class<? extends Annotation> annotationClass){
         return target.getAnnotation(annotationClass) != null;
+    }
+
+    private String getSubPackage(Path clazzPath){
+        String subDir = clazzPath.getParent().toString();
+        int packageEndIndex = subDir.lastIndexOf(scanPackage.replace(".", "/"))
+                + scanPackage.length() + 1;
+        if (packageEndIndex >= subDir.length()) {
+            return "";
+        }
+        return subDir.substring(packageEndIndex).replace("/", ".");
     }
 }
