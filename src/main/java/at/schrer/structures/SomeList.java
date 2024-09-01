@@ -298,13 +298,13 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public ListIterator<T> listIterator() {
-        return new FuckThatListIterator<>(this.first);
+        return new SomeListIterator<>(this.first);
     }
 
     @Override
     public ListIterator<T> listIterator(int index) {
         Node<T> startNode = getNode(index);
-        return new FuckThatListIterator<>(startNode, index);
+        return new SomeListIterator<>(startNode, index);
     }
 
     @Override
@@ -371,17 +371,17 @@ public class SomeList<T> implements List<T> {
         }
     }
 
-    private static class FuckThatListIterator<T> implements ListIterator<T> {
+    private static class SomeListIterator<T> implements ListIterator<T> {
         Node<T> nextNode;
         int nextIndex;
 
 
-        public FuckThatListIterator(Node<T> startNode){
+        public SomeListIterator(Node<T> startNode){
             this.nextNode = startNode;
             this.nextIndex = 0;
         }
 
-        public FuckThatListIterator(Node<T> startNode, int startIndex){
+        public SomeListIterator(Node<T> startNode, int startIndex){
             this.nextNode = startNode;
             this.nextIndex = startIndex;
         }
