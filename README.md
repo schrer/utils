@@ -6,6 +6,7 @@ I did not look up best practices for most of the things I implemented.
 
 ## Contents
 
+- A [StringUtils](./src/main/java/at/schrer/utils/StringUtils.java) implementation, containing some more normal functions (reverse, removeChar) and some more nonsensical ones (sort, sum)
 - A linked list implementation at [SomeList](./src/main/java/at/schrer/structures/SomeList.java), implementing the java.util.List interface.
 - The [ClassScanner](./src/main/java/at/schrer/inject/ClassScanner.java), which is able to return a list of classes under a provided package name. The classes can also be filtered by annotations.
 - A class called [ContextBuilder](./src/main/java/at/schrer/inject/ContextBuilder.java), which can instantiate classes from a provided package that are marked with the annotation [@Component](./src/main/java/at/schrer/inject/annotations/Component.java). Currently, it can only instantiate classes that have a no-args constructor.
