@@ -11,6 +11,8 @@ import java.util.stream.Collector;
 
 public class StringUtils {
 
+    private StringUtils(){}
+
     public static String reverse(String s) {
         if (s == null) {
             return null;
