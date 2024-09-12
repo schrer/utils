@@ -10,18 +10,37 @@ import static org.junit.jupiter.api.Assertions.*;
 class ContextBuilderTest {
 
     private static final String DUMMY_PACKAGE = "at.schrer.inject.dummyclasses";
+    private static final String DUMMY_PACKAGE_SUB = "at.schrer.inject.dummyclasses.sub";
 
     @Test
     void instantiateContext() throws ContextException {
-        ContextBuilder contextBuilder = new ContextBuilder(DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getInstance(DUMMY_PACKAGE);
+    }
+
+    @Test
+    void getTwoBuildersOnSamePackage() throws ContextException {
+        // When
+        ContextBuilder contextBuilder1 = ContextBuilder.getInstance(DUMMY_PACKAGE);
+        ContextBuilder contextBuilder2 = ContextBuilder.getInstance(DUMMY_PACKAGE);
+        // Then
+        assertEquals(contextBuilder1, contextBuilder2);
+    }
+
+    @Test
+    void getTwoBuildersOnDiffPackage() throws ContextException {
+        // When
+        ContextBuilder contextBuilder1 = ContextBuilder.getInstance(DUMMY_PACKAGE);
+        ContextBuilder contextBuilder2 = ContextBuilder.getInstance(DUMMY_PACKAGE_SUB);
+        // Then
+        assertNotEquals(contextBuilder1, contextBuilder2);
     }
 
     @Test
     void loadComponent() throws ContextException {
         // Given
-        ContextBuilder contextBuilder = new ContextBuilder(DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getInstance(DUMMY_PACKAGE);
         // When
-        Component1 instance1 = contextBuilder.getInstance(Component1.class);
+        Component1 instance1 = contextBuilder.getComponent(Component1.class);
         // Then
         assertNotNull(instance1);
     }
@@ -29,12 +48,12 @@ class ContextBuilderTest {
     @Test
     void checkSingletonBehavior() throws ContextException {
         // Given
-        ContextBuilder contextBuilder = new ContextBuilder(DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getInstance(DUMMY_PACKAGE);
         // When
-        Component1 instance1 = contextBuilder.getInstance(Component1.class);
-        Component2 instance2 = contextBuilder.getInstance(Component2.class);
-        Component1 instance3 = contextBuilder.getInstance(Component1.class);
-        Component2 instance4 = contextBuilder.getInstance(Component2.class);
+        Component1 instance1 = contextBuilder.getComponent(Component1.class);
+        Component2 instance2 = contextBuilder.getComponent(Component2.class);
+        Component1 instance3 = contextBuilder.getComponent(Component1.class);
+        Component2 instance4 = contextBuilder.getComponent(Component2.class);
         // Then
         assertNotNull(instance1);
         assertNotNull(instance2);
@@ -45,8 +64,8 @@ class ContextBuilderTest {
     @Test
     void loadNonComponent() throws ContextException {
         // Given
-        ContextBuilder contextBuilder = new ContextBuilder(DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getInstance(DUMMY_PACKAGE);
         // When / Then
-        assertThrows(ContextException.class, () -> contextBuilder.getInstance(NonComponent1.class));
+        assertThrows(ContextException.class, () -> contextBuilder.getComponent(NonComponent1.class));
     }
 }

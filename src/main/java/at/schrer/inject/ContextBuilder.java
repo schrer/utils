@@ -11,10 +11,13 @@ import java.util.List;
 import java.util.Map;
 
 public class ContextBuilder {
+
+    private static final Map<String, ContextBuilder> loadedBuilders = new HashMap<>();
+
     private final List<Class<?>> components;
     private final Map<Class<?>, Object> componentInstances;
 
-    public ContextBuilder(String packagePath) throws ContextException {
+    private ContextBuilder(String packagePath) throws ContextException {
         this.components = new ArrayList<>();
         this.componentInstances = new HashMap<>();
 
@@ -26,7 +29,22 @@ public class ContextBuilder {
         }
     }
 
-    public <T> T getInstance(Class<T> componentClass) throws ContextException {
+    public static ContextBuilder getInstance(String packagePath) throws ContextException {
+        if (loadedBuilders.containsKey(packagePath)) {
+            return loadedBuilders.get(packagePath);
+        }
+
+        synchronized (loadedBuilders) {
+            if (loadedBuilders.containsKey(packagePath)) {
+                return loadedBuilders.get(packagePath);
+            }
+            ContextBuilder newBuilder = new ContextBuilder(packagePath);
+            loadedBuilders.put(packagePath, newBuilder);
+            return newBuilder;
+        }
+    }
+
+    public <T> T getComponent(Class<T> componentClass) throws ContextException {
         if (componentInstances.containsKey(componentClass)) {
             return ((T) componentInstances.get(componentClass));
         }
