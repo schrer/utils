@@ -61,6 +61,7 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public <T1> T1[] toArray(T1[] a) {
+        // TODO
         return null;
     }
 
@@ -134,6 +135,10 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public boolean addAll(Collection<? extends T> c) {
+        if (c == null || c.isEmpty()) {
+            return false;
+        }
+
         for (T element : c) {
             this.add(element);
         }
@@ -143,7 +148,47 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public boolean addAll(int index, Collection<? extends T> c) {
-        return false;
+        checkIndexBounds(index, true);
+        if (c == null || c.isEmpty()) {
+            return false;
+        }
+
+        if (this.isEmpty() || index == size) {
+            // Append at end
+            return this.addAll(c);
+        }
+
+        if (c.size() == 1) {
+            // Single element list
+            this.add(index, c.iterator().next());
+            return true;
+        }
+
+        Iterator<? extends T> elements = c.iterator();
+        int sizeIncrease = c.size();
+
+        Node<T> appenderNode;
+        if (index == 0) {
+            addFirst(elements.next());
+            appenderNode = first;
+            sizeIncrease--;
+        } else {
+            appenderNode = getNode(index).getPrevious();
+        }
+        Node<T> afterElementsNode = appenderNode.getNext();
+
+        Node<T> lastAddedNode;
+        do {
+            Node<T> newNode = new Node<>(elements.next());
+            newNode.setPrevious(appenderNode);
+            appenderNode.setNext(newNode);
+            lastAddedNode = appenderNode = newNode;
+        } while (elements.hasNext());
+
+        lastAddedNode.setNext(afterElementsNode);
+        afterElementsNode.setPrevious(lastAddedNode);
+        size = size + sizeIncrease;
+        return true;
     }
 
     @Override
@@ -158,6 +203,7 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
+        // TODO
         return false;
     }
 
@@ -173,10 +219,8 @@ public class SomeList<T> implements List<T> {
         return getNode(index).getValue();
     }
 
-    private Node<T> getNode(int index) {
-        if (index >= size || index < 0) {
-            throw new IndexOutOfBoundsException("Size of list is " + size + ", queried index was " + index);
-        }
+    private Node<T> getNode(int index) throws IndexOutOfBoundsException {
+        checkIndexBounds(index, false);
 
         if (index == 0) {
             return first;
@@ -216,12 +260,14 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public T set(int index, T element) {
+        checkIndexBounds(index, false);
         Node<T> node = getNode(index);
         return node.setValue(element);
     }
 
     @Override
     public void add(int index, T element) {
+        checkIndexBounds(index, true);
         if (index == size) {
             this.add(element);
             return;
@@ -243,6 +289,8 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public T remove(int index) {
+        checkIndexBounds(index, false);
+
         Node<T> target = getNode(index);
         Node<T> previous = target.getPrevious();
         Node<T> next = target.getNext();
@@ -303,6 +351,7 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public ListIterator<T> listIterator(int index) {
+        checkIndexBounds(index, false);
         Node<T> startNode = getNode(index);
         return new SomeListIterator<>(startNode, index);
     }
@@ -319,6 +368,31 @@ public class SomeList<T> implements List<T> {
             copiedList.add(node.getValue());
         }
         return copiedList;
+    }
+
+    /**
+     * Method to check whether an index is out of the lists bounds.
+     * The parameter is meant to decide between allowing an index equal to the size or not.
+     * Set to true it is meant for add operations, where a new element can be placed at the index equal to the size.
+     * Set to false it is meant for read operations, where no element at index==size exists.
+     *
+     * @param index index to check
+     * @param allowEqualsSize allow index to be equal to size
+     * @throws IndexOutOfBoundsException if the index is out of permitted bounds
+     */
+    private void checkIndexBounds(int index, boolean allowEqualsSize) throws IndexOutOfBoundsException {
+        if (index < 0) {
+            throw new IndexOutOfBoundsException("Index is below 0");
+        }
+
+        if (!allowEqualsSize && index >= size){
+            throw new IndexOutOfBoundsException("Index goes beyond last element");
+        }
+
+        if (allowEqualsSize && index > size) {
+            throw new IndexOutOfBoundsException("Index is above list size");
+        }
+
     }
 
     private static class Node<T> {
