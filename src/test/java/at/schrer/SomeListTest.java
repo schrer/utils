@@ -230,6 +230,120 @@ class SomeListTest {
         assertEquals(4, list.indexOf("that"));
     }
 
+    @Test
+    void testRetainAll_emptyInputEmptyList(){
+        // Given
+        SomeList<String> list = new SomeList<>();
+
+        // When
+        boolean modified = list.retainAll(List.of());
+
+        // Then
+        assertFalse(modified);
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    void testRetainAll_emptyInput(){
+        // Given
+        SomeList<String> list = get10FilledList();
+
+        // When
+        boolean modified = list.retainAll(List.of());
+
+        // Then
+        assertTrue(modified);
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    void testRetainAll_add1Retain1(){
+        // Given
+        SomeList<String> list = new SomeList<>();
+        list.add("value");
+
+        // When
+        boolean modified = list.retainAll(List.of("value"));
+
+        // Then
+        assertFalse(modified);
+        assertEquals(1, list.size());
+    }
+
+    @Test
+    void testRetainAll_add1Retain0(){
+        // Given
+        SomeList<String> list = new SomeList<>();
+        list.add("something");
+
+        // When
+        boolean modified = list.retainAll(List.of("somethingElse"));
+
+        // Then
+        assertTrue(modified);
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    void testRetainAll_addSomeRetain1(){
+        // Given
+        SomeList<String> list = new SomeList<>();
+        list.add("some");
+        list.add("more");
+        list.add("values");
+
+        // When
+        boolean modified = list.retainAll(List.of("values"));
+
+        // Then
+        assertTrue(modified);
+        assertEquals(1, list.size());
+        assertTrue(list.contains("values"));
+    }
+
+    @Test
+    void testRetainAll_addSomeRetain0(){
+        // Given
+        SomeList<String> list = get10FilledList();
+
+        // When
+        boolean modified = list.retainAll(List.of("itsnotinthelist"));
+
+        // Then
+        assertTrue(modified);
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    void testRetainAll_addSomeRetainSome(){
+        // Given
+        SomeList<String> list = get10FilledList();
+        List<String> retainList = List.of("sixth", "seventh", "fifth");
+
+        // When
+        boolean modified = list.retainAll(retainList);
+
+        // Then
+        assertTrue(modified);
+        assertTrue(list.containsAll(retainList));
+        assertEquals(retainList.size(), list.size());
+    }
+
+    @Test
+    void testRetainAll_addSomeRetainFirstAndLast(){
+        // Given
+        SomeList<String> list = get10FilledList();
+        List<String> retainList = List.of("first", "tenth");
+
+        // When
+        boolean modified = list.retainAll(retainList);
+
+        // Then
+        assertTrue(modified);
+        assertTrue(list.containsAll(retainList));
+        assertEquals(retainList.size(), list.size());
+    }
+
 
     private SomeList<String> get10FilledList(){
         SomeList<String> list = new SomeList<>();

@@ -96,14 +96,6 @@ public class SomeList<T> implements List<T> {
             return true;
         }
 
-        if (last.contains(o)) {
-            Node<T> secondToLast = last.getPrevious();
-            secondToLast.setNext(null);
-            last = secondToLast;
-            size--;
-            return true;
-        }
-
 
         Node<T> node = first.getNext();
         do {
@@ -118,6 +110,15 @@ public class SomeList<T> implements List<T> {
             }
             node = node.getNext();
         } while (node.hasNext());
+
+        // Last node contains object
+        if (node.contains(o)) {
+            Node<T> secondToLast = last.getPrevious();
+            secondToLast.setNext(null);
+            last = secondToLast;
+            size--;
+            return true;
+        }
 
         return false;
     }
@@ -203,8 +204,27 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        // TODO
-        return false;
+        if (c.isEmpty()) {
+            if (this.isEmpty()) {
+                return false;
+            } else {
+                this.clear();
+                return true;
+            }
+        }
+
+        int initialSize = this.size;
+        Node<T> iteratorNode = first;
+        while (iteratorNode != null) {
+            if (c.contains(iteratorNode.getValue())) {
+                iteratorNode = iteratorNode.getNext();
+                continue;
+            }
+            Node<T> forRemoval = iteratorNode;
+            iteratorNode = iteratorNode.getNext();
+            removeNode(forRemoval);
+        }
+        return initialSize != this.size;
     }
 
     @Override
@@ -393,6 +413,41 @@ public class SomeList<T> implements List<T> {
             throw new IndexOutOfBoundsException("Index is above list size");
         }
 
+    }
+
+    private void removeNode(Node<T> node){
+        if (size==1 && node==first) {
+            clear();
+            return;
+        }
+
+        size--;
+        if (first == node) {
+            Node<T> second = first.getNext();
+            if (second != null) {
+                second.setPrevious(null);
+            }
+            node.setNext(null);
+            first = second;
+            return;
+        }
+
+        if (last == node) {
+            Node<T> secondToLast = last.getPrevious();
+            secondToLast.setNext(null);
+            last = secondToLast;
+            return;
+        }
+
+
+        Node<T> prev = node.getPrevious();
+        Node<T> next = node.getNext();
+
+        node.setNext(null);
+        node.setPrevious(null);
+
+        prev.setNext(next);
+        next.setPrevious(prev);
     }
 
     private static class Node<T> {
