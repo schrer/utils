@@ -1,6 +1,6 @@
 package at.schrer.inject;
 
-public class ContextException extends Exception {
+public class ContextException extends RuntimeException {
     public ContextException(String message) {
         super(message);
     }

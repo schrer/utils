@@ -1,4 +1,4 @@
-package at.schrer.inject.dummyclasses;
+package at.schrer.inject.dummyclasses.depless;
 
 import at.schrer.inject.annotations.Component;
 
