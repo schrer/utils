@@ -18,14 +18,14 @@ class ContextBuilderTest {
 
     @Test
     void instantiateContext() {
-        ContextBuilder contextBuilder = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
     }
 
     @Test
     void getTwoBuildersOnSamePackage() {
         // When
-        ContextBuilder contextBuilder1 = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE);
-        ContextBuilder contextBuilder2 = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE);
+        ContextBuilder contextBuilder1 = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
+        ContextBuilder contextBuilder2 = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
         // Then
         assertEquals(contextBuilder1, contextBuilder2);
     }
@@ -33,8 +33,8 @@ class ContextBuilderTest {
     @Test
     void getTwoBuildersOnDiffPackage() {
         // When
-        ContextBuilder contextBuilder1 = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE);
-        ContextBuilder contextBuilder2 = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE_SUB);
+        ContextBuilder contextBuilder1 = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
+        ContextBuilder contextBuilder2 = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE_SUB);
         // Then
         assertNotEquals(contextBuilder1, contextBuilder2);
     }
@@ -42,7 +42,7 @@ class ContextBuilderTest {
     @Test
     void loadComponent() {
         // Given
-        ContextBuilder contextBuilder = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
         // When
         Component1 instance1 = contextBuilder.getComponent(Component1.class);
         // Then
@@ -52,7 +52,7 @@ class ContextBuilderTest {
     @Test
     void checkSingletonBehavior() {
         // Given
-        ContextBuilder contextBuilder = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
         // When
         Component1 instance1 = contextBuilder.getComponent(Component1.class);
         Component2 instance2 = contextBuilder.getComponent(Component2.class);
@@ -68,23 +68,23 @@ class ContextBuilderTest {
     @Test
     void loadNonComponent() {
         // Given
-        ContextBuilder contextBuilder = ContextBuilder.getInstance(NO_DEP_DUMMY_PACKAGE);
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
         // When / Then
         assertThrows(ContextException.class, () -> contextBuilder.getComponent(NonComponent1.class));
     }
 
     @Test
     void instantiateContext_deps() {
-        assertDoesNotThrow(() -> ContextBuilder.getInstance(YES_DEP_DUMMY_PACKAGE));
+        assertDoesNotThrow(() -> ContextBuilder.getContextInstance(YES_DEP_DUMMY_PACKAGE));
     }
 
     @Test
     void instantiateContext_cycle() {
-        assertThrows(ContextException.class, () -> ContextBuilder.getInstance(CYCLE_DEP_DUMMY_PACKAGE));
+        assertThrows(ContextException.class, () -> ContextBuilder.getContextInstance(CYCLE_DEP_DUMMY_PACKAGE));
     }
 
     @Test
     void instantiateContext_multiStepCycle() throws ContextException {
-        assertThrows(ContextException.class, () -> ContextBuilder.getInstance(MULTISTEP_CYCLE_DEP_DUMMY_PACKAGE));
+        assertThrows(ContextException.class, () -> ContextBuilder.getContextInstance(MULTISTEP_CYCLE_DEP_DUMMY_PACKAGE));
     }
 }

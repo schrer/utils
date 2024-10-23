@@ -8,6 +8,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+/**
+ * The ContextBuilder class is used to scan a package for available components (annotated with @Component) and create and provide instances of them.
+ * A contextbuilder instance can be made through the getContextInstance function. If a contextbuilder for a specific package was already created,
+ * the same instance will be returned again when a getContextInstance is called with that same package name again.
+ * So only one contextbuilder will be created per package and is then reused.
+ *
+ * If a package contains components with unsatisfiable dependencies (circular dependencies, no components without dependencies), getContextInstance method throws a ContextException.
+ *
+ */
 public class ContextBuilder {
 
     private static final Map<String, ContextBuilder> loadedBuilders = new HashMap<>();
@@ -99,7 +108,14 @@ public class ContextBuilder {
         return Optional.empty();
     }
 
-    public static ContextBuilder getInstance(String packagePath) throws ContextException {
+    /**
+     * Get a ContextBuilder instance for the given package.
+     *
+     * @param packagePath the package to scan for components.
+     * @return a ContextBuilder instance, initialized on the given package.
+     * @throws ContextException if an error happens while trying to load the components of the given package.
+     */
+    public static ContextBuilder getContextInstance(String packagePath) throws ContextException {
         if (loadedBuilders.containsKey(packagePath)) {
             return loadedBuilders.get(packagePath);
         }
