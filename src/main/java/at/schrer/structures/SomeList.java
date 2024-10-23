@@ -1,5 +1,6 @@
 package at.schrer.structures;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.UnaryOperator;
 
@@ -61,8 +62,28 @@ public class SomeList<T> implements List<T> {
 
     @Override
     public <T1> T1[] toArray(T1[] a) {
-        // TODO
-        return null;
+        if (a == null) {
+            throw new NullPointerException();
+        }
+
+        Class<?> arrayType = a.getClass().getComponentType();
+        if (a.length < this.size()) {
+            a = (T1[]) Array.newInstance(arrayType, this.size());
+        }
+
+        for (int i=0; i < this.size(); i++) {
+            T value = this.get(i);
+            if (value != null) {
+                Class<?> valueType = value.getClass();
+                if (!arrayType.isAssignableFrom(valueType)){
+                    throw new ArrayStoreException("Cannot cast element of type " + valueType
+                            + " to target class of array which is " + arrayType);
+                }
+            }
+            a[i] = (T1) value;
+        }
+
+        return a;
     }
 
     @Override

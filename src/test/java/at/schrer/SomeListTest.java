@@ -3,6 +3,7 @@ package at.schrer;
 import at.schrer.structures.SomeList;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -95,6 +96,69 @@ class SomeListTest {
         assertEquals(10, arr.length);
         assertEquals(arr[0], list.getFirst());
         assertEquals(arr[9], list.getLast());
+    }
+
+    @Test
+    void testToArrayWithArgEmpty(){
+        // Given
+        SomeList<String> list = new SomeList<>();
+        // When
+        String[] arr = list.toArray(new String[10]);
+        // Then
+        assertNotNull(arr);
+        assertEquals(10, arr.length);
+        for (String elem : arr) {
+            assertNull(elem);
+        }
+    }
+
+    @Test
+    void testToArrayWithArg_tooShort(){
+        // Given
+        SomeList<String> list = get10FilledList();
+        // When
+        String[] arr = list.toArray(new String[1]);
+        // Then
+        assertNotNull(arr);
+        assertEquals(10, arr.length);
+        for (String elem : arr) {
+            assertTrue(list.contains(elem), "Element " + elem + " should not be in the array.");
+        }
+
+        List<String> listFromArray = Arrays.asList(arr);
+        for (String elem : list) {
+            assertTrue(listFromArray.contains(elem), "Element " + elem + " is missing in the array.");
+        }
+    }
+
+    @Test
+    void testToArrayWithArg_typeMismatch(){
+        // Given
+        SomeList<Number> list = new SomeList<>();
+        list.add(Integer.valueOf(1));
+        list.add(Integer.valueOf(5));
+        list.add(Double.valueOf(5.8));
+        // When/Then
+        assertThrows(ArrayStoreException.class, () -> list.toArray(new Integer[1]));
+    }
+
+    @Test
+    void testToArrayWithArg_reuseArray(){
+        // Given
+        SomeList<String> list = new SomeList<>();
+        list.add("one");
+        list.add("two");
+        list.add("three");
+        Object[] arr = new Object[5];
+
+        // When
+        list.toArray(arr);
+        // Then
+        assertEquals("one", arr[0]);
+        assertEquals("two", arr[1]);
+        assertEquals("three", arr[2]);
+        assertNull(arr[3]);
+        assertNull(arr[4]);
     }
 
     @Test
