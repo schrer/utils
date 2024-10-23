@@ -13,7 +13,9 @@ import java.util.*;
  * A contextbuilder instance can be made through the getContextInstance function. If a contextbuilder for a specific package was already created,
  * the same instance will be returned again when a getContextInstance is called with that same package name again.
  * So only one contextbuilder will be created per package and is then reused.
- * Instances of components are created lazily, only once they are requested (or needed as dependency for other components).
+ *
+ * Instances are created as singletons. This means an instance will be created only once. If the same component class is requested again, the previously created instance is returned again.
+ * The ContextBuilder create instances of components lazily, only once they are requested (or needed as dependency for other components).
  *
  * If a package contains components with unsatisfiable dependencies (circular dependencies, no components without dependencies), getContextInstance method throws a ContextException.
  *
@@ -77,37 +79,14 @@ public class ContextBuilder {
     }
 
     /**
-     * Searches for a list of classes present in the graph of components that already have all dependencies fulfilled.
-     * If the blueprint has a constructor without arguments, an empty list is returned, as there are no dependencies needed.
-     * If no constructor can be fully satisfied with the available blueprints in the component graph, an empty Optional is returned.
+     * Get an instance of a component class.
+     * Either a new instance is created, or if an instance of the same component was requested previously, the same instance is returned again.
      *
-     * @param bluePrint the component blueprint for which satisfiable dependencies should be found
-     * @return an Optional containing a list of dependencies that can satisfy one of the constructors, or an empty Optional if there is no such list
+     * @param componentClass the class of the component
+     * @return an instance of the component
+     * @param <T> the type of the component
+     * @throws ContextException if the class is not known component within the context or cannot be created for other reasons.
      */
-    private Optional<List<ComponentBluePrint<Class<?>>>> getSatisfiableDependencies(ComponentBluePrint<Class<?>> bluePrint){
-        if (bluePrint.canBeDependencyLess()) {
-            return Optional.of(List.of());
-        }
-
-        List<ComponentBluePrint.ComponentConstructor<Class<?>>> constructors = bluePrint.getConstructors();
-        for (ComponentBluePrint.ComponentConstructor<Class<?>> constructor : constructors) {
-            List<ComponentBluePrint<Class<?>>> deps = new ArrayList<>();
-            List<Class<?>> dependencies = constructor.getDependencies();
-            for (Class<?> dep : dependencies) {
-                Optional<ComponentBluePrint<Class<?>>> depNode =
-                        componentGraph.find(it -> it.isSameClass(dep));
-                if(depNode.isEmpty()) {
-                    break;
-                }
-                deps.add(depNode.get());
-            }
-            if (deps.size() == dependencies.size()) {
-                return Optional.of(deps);
-            }
-        }
-        return Optional.empty();
-    }
-
     public <T> T getComponent(Class<T> componentClass) throws ContextException {
         if (componentInstances.containsKey(componentClass)) {
             return ((T) componentInstances.get(componentClass));
@@ -169,5 +148,37 @@ public class ContextBuilder {
      */
     public static void clearContextInstances(){
         loadedBuilders.clear();
+    }
+
+    /**
+     * Searches for a list of classes present in the graph of components that already have all dependencies fulfilled.
+     * If the blueprint has a constructor without arguments, an empty list is returned, as there are no dependencies needed.
+     * If no constructor can be fully satisfied with the available blueprints in the component graph, an empty Optional is returned.
+     *
+     * @param bluePrint the component blueprint for which satisfiable dependencies should be found
+     * @return an Optional containing a list of dependencies that can satisfy one of the constructors, or an empty Optional if there is no such list
+     */
+    private Optional<List<ComponentBluePrint<Class<?>>>> getSatisfiableDependencies(ComponentBluePrint<Class<?>> bluePrint){
+        if (bluePrint.canBeDependencyLess()) {
+            return Optional.of(List.of());
+        }
+
+        List<ComponentBluePrint.ComponentConstructor<Class<?>>> constructors = bluePrint.getConstructors();
+        for (ComponentBluePrint.ComponentConstructor<Class<?>> constructor : constructors) {
+            List<ComponentBluePrint<Class<?>>> deps = new ArrayList<>();
+            List<Class<?>> dependencies = constructor.getDependencies();
+            for (Class<?> dep : dependencies) {
+                Optional<ComponentBluePrint<Class<?>>> depNode =
+                        componentGraph.find(it -> it.isSameClass(dep));
+                if(depNode.isEmpty()) {
+                    break;
+                }
+                deps.add(depNode.get());
+            }
+            if (deps.size() == dependencies.size()) {
+                return Optional.of(deps);
+            }
+        }
+        return Optional.empty();
     }
 }
