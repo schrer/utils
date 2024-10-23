@@ -13,6 +13,7 @@ import java.util.*;
  * A contextbuilder instance can be made through the getContextInstance function. If a contextbuilder for a specific package was already created,
  * the same instance will be returned again when a getContextInstance is called with that same package name again.
  * So only one contextbuilder will be created per package and is then reused.
+ * Instances of components are created lazily, only once they are requested (or needed as dependency for other components).
  *
  * If a package contains components with unsatisfiable dependencies (circular dependencies, no components without dependencies), getContextInstance method throws a ContextException.
  *
@@ -21,17 +22,16 @@ public class ContextBuilder {
 
     private static final Map<String, ContextBuilder> loadedBuilders = new HashMap<>();
 
-    private final List<Class<?>> components;
     private final Map<Class<?>, Object> componentInstances;
 
     private final SomeAcyclicGraph<ComponentBluePrint<Class<?>>> componentGraph;
 
     private ContextBuilder(String packagePath) throws ContextException {
-        this.components = new ArrayList<>();
         this.componentInstances = new HashMap<>();
         this.componentGraph = new SomeAcyclicGraph<>();
 
         final ClassScanner classScanner = new ClassScanner(packagePath);
+        List<Class<?>> components = new ArrayList<>();
         try {
             components.addAll(classScanner.findByAnnotation(Component.class));
         } catch (IOException | URISyntaxException | ClassNotFoundException e) {
@@ -108,6 +108,38 @@ public class ContextBuilder {
         return Optional.empty();
     }
 
+    public <T> T getComponent(Class<T> componentClass) throws ContextException {
+        if (componentInstances.containsKey(componentClass)) {
+            return ((T) componentInstances.get(componentClass));
+        }
+
+        Optional<ComponentBluePrint<Class<?>>> bluePrintOptional = componentGraph.find(it -> it.isSameClass(componentClass));
+        if (bluePrintOptional.isEmpty()) {
+            throw new ContextException("Class not in context: " + componentClass.getName());
+        }
+
+        var bluePrint = bluePrintOptional.get();
+        try {
+            T instance;
+            if (bluePrint.canBeDependencyLess()) {
+                instance = (T) bluePrint.getNoArgsInstance();
+            } else {
+                Set<ComponentBluePrint<Class<?>>> outbounds = componentGraph.getOutbounds(bluePrint);
+
+                // TODO make this non-recursive
+                Object[] dependencyInstances = outbounds.stream()
+                        .map(ComponentBluePrint::getComponentClass)
+                        .map(this::getComponent)
+                        .toArray();
+                instance = (T) bluePrint.getInstance(dependencyInstances);
+            }
+            componentInstances.put(componentClass, instance);
+            return instance;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new ContextException("Failed to create instance of class " + componentClass.getName(), e);
+        }
+    }
+
     /**
      * Get a ContextBuilder instance for the given package.
      *
@@ -130,21 +162,12 @@ public class ContextBuilder {
         }
     }
 
-    public <T> T getComponent(Class<T> componentClass) throws ContextException {
-        if (componentInstances.containsKey(componentClass)) {
-            return ((T) componentInstances.get(componentClass));
-        }
-
-        if (!components.contains(componentClass)) {
-            throw new ContextException("Class not in context: " + componentClass.getName());
-        }
-
-        try {
-            T instance = componentClass.getDeclaredConstructor().newInstance();
-            componentInstances.put(componentClass, instance);
-            return instance;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new ContextException("Failed to create instance of class " + componentClass.getName(), e);
-        }
+    /**
+     * Clears all instances of ContextBuilders, allowing to create new instances for already loaded packages.
+     * This is meant for testing only, to allow a clean slate after each test.
+     * It does not destroy ContextBuilder instances that are still referenced in other objects/scopes. They continue to function and are not closed.
+     */
+    public static void clearContextInstances(){
+        loadedBuilders.clear();
     }
 }

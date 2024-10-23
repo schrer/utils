@@ -36,13 +36,13 @@ public class ComponentBluePrint<T> {
         return this.componentClass == clazz;
     }
 
-    public Optional<T> getNoArgsInstance()
+    public T getNoArgsInstance()
             throws InvocationTargetException, InstantiationException, IllegalAccessException {
         if (noArgConstructor == null) {
-            return Optional.empty();
+            throw new InstantiationException("No argument-less constructor available for this class.");
         }
 
-        return Optional.of(noArgConstructor.getInstance());
+        return noArgConstructor.getInstance();
     }
 
     public T getInstance(Object... parameters)
@@ -58,6 +58,10 @@ public class ComponentBluePrint<T> {
 
     public List<ComponentConstructor<T>> getConstructors(){
         return constructors;
+    }
+
+    public Class<T> getComponentClass(){
+        return this.componentClass;
     }
 
     public static class ComponentConstructor<V> {
@@ -90,7 +94,29 @@ public class ComponentBluePrint<T> {
 
         public V getInstance(Object... parameters)
                 throws InvocationTargetException, InstantiationException, IllegalAccessException {
+            if (parameters.length > 1) {
+                parameters = sortMethodParameters(parameters, constructor.getParameterTypes());
+            }
             return constructor.newInstance(parameters);
+        }
+
+        private Object[] sortMethodParameters(Object[] parameters, Class<?>[] typesInOrder){
+            if (parameters.length != typesInOrder.length) {
+                throw new IllegalArgumentException("Wrong number of parameters given for this constructor.");
+            }
+            Object[] sortedParameters = new Object[typesInOrder.length];
+            for(int i = 0; i < typesInOrder.length; i++) {
+                Class<?> target = typesInOrder[i];
+                for (Object param : parameters) {
+                    if (target.isAssignableFrom(param.getClass())) {
+                        sortedParameters[i] = param;
+                    }
+                }
+                if (sortedParameters[i] == null) {
+                    throw new IllegalArgumentException("Instance of class " + target + " is missing as provided parameter.");
+                }
+            }
+            return sortedParameters;
         }
     }
 }

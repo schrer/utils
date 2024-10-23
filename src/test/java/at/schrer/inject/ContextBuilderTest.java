@@ -3,6 +3,10 @@ package at.schrer.inject;
 import at.schrer.inject.dummyclasses.depless.Component1;
 import at.schrer.inject.dummyclasses.depless.Component2;
 import at.schrer.inject.dummyclasses.depless.NonComponent1;
+import at.schrer.inject.dummyclasses.yesdeps.DepComp1;
+import at.schrer.inject.dummyclasses.yesdeps.DepComp2;
+import at.schrer.inject.dummyclasses.yesdeps.DepComp4;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,9 +20,14 @@ class ContextBuilderTest {
     private static final String MULTISTEP_CYCLE_DEP_DUMMY_PACKAGE = "at.schrer.inject.dummyclasses.multistepcycle";
     private static final String CYCLE_DEP_DUMMY_PACKAGE = "at.schrer.inject.dummyclasses.cycledep";
 
+    @BeforeEach
+    void cleanUpComponentLoaders(){
+        ContextBuilder.clearContextInstances();
+    }
+
     @Test
     void instantiateContext() {
-        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE);
+        assertDoesNotThrow(() -> ContextBuilder.getContextInstance(NO_DEP_DUMMY_PACKAGE));
     }
 
     @Test
@@ -86,5 +95,35 @@ class ContextBuilderTest {
     @Test
     void instantiateContext_multiStepCycle() throws ContextException {
         assertThrows(ContextException.class, () -> ContextBuilder.getContextInstance(MULTISTEP_CYCLE_DEP_DUMMY_PACKAGE));
+    }
+
+    @Test
+    void loadComponentWithoutDeps_yesdeps(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(YES_DEP_DUMMY_PACKAGE);
+        // When
+        DepComp1 instance1 = contextBuilder.getComponent(DepComp1.class);
+        // Then
+        assertNotNull(instance1);
+    }
+
+    @Test
+    void loadComponentWithOneDep_yesdeps(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(YES_DEP_DUMMY_PACKAGE);
+        // When
+        DepComp2 instance = contextBuilder.getComponent(DepComp2.class);
+        // Then
+        assertNotNull(instance);
+    }
+
+    @Test
+    void loadComponentWith3Deps_yesdeps(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(YES_DEP_DUMMY_PACKAGE);
+        // When
+        DepComp4 instance = contextBuilder.getComponent(DepComp4.class);
+        // Then
+        assertNotNull(instance);
     }
 }

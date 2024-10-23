@@ -2,6 +2,7 @@ package at.schrer.structures;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * A custom acyclic graph implementation.
@@ -62,6 +63,20 @@ public class SomeAcyclicGraph<T> {
             }
         }
         return null;
+    }
+
+    /**
+     * Finds a node containing a given value and returns the nodes outbound nodes.
+     *
+     * @param value the value to look for in a node.
+     * @return the outbounds of the node containing this value
+     * @throws NullPointerException if no node containing the given value is found
+     */
+    public Set<T> getOutbounds(T value) {
+        return this.getNode(value)
+                .getOutbounds().stream()
+                .map(Node::getValue)
+                .collect(Collectors.toSet());
     }
 
     /**
