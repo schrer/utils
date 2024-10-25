@@ -1,6 +1,5 @@
-package at.schrer;
+package at.schrer.structures;
 
-import at.schrer.structures.SomeList;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
