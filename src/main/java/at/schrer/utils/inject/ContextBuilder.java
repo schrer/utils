@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The ContextBuilder class is used to scan a package for available components (annotated with @Component) and create and provide instances of them.
@@ -22,7 +23,7 @@ import java.util.*;
  */
 public class ContextBuilder {
 
-    private static final Map<String, ContextBuilder> loadedBuilders = new HashMap<>();
+    private static final Map<String, ContextBuilder> loadedBuilders = new ConcurrentHashMap<>();
 
     private final Map<Class<?>, Object> componentInstances;
 
@@ -165,19 +166,27 @@ public class ContextBuilder {
 
         List<ComponentBluePrint.ComponentConstructor<Class<?>>> constructors = bluePrint.getConstructors();
         for (ComponentBluePrint.ComponentConstructor<Class<?>> constructor : constructors) {
-            List<ComponentBluePrint<Class<?>>> deps = new ArrayList<>();
-            List<Class<?>> dependencies = constructor.getDependencies();
-            for (Class<?> dep : dependencies) {
-                Optional<ComponentBluePrint<Class<?>>> depNode =
-                        componentGraph.find(it -> it.isSameClass(dep));
-                if(depNode.isEmpty()) {
-                    break;
-                }
-                deps.add(depNode.get());
+            var result = resolveConstructorDependencies(constructor);
+            if(result.isPresent()) {
+                return result;
             }
-            if (deps.size() == dependencies.size()) {
-                return Optional.of(deps);
-            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<List<ComponentBluePrint<Class<?>>>> resolveConstructorDependencies(
+            ComponentBluePrint.ComponentConstructor<Class<?>> constructor
+    ){
+        List<Class<?>> dependencies = constructor.getDependencies();
+        List<ComponentBluePrint<Class<?>>> deps = dependencies.stream()
+                .map(dep -> componentGraph.find(
+                        it -> it.isSameClass(dep)
+                ).orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (deps.size() == dependencies.size()) {
+            return Optional.of(deps);
         }
         return Optional.empty();
     }
