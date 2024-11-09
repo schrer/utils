@@ -1,7 +1,6 @@
 package at.schrer.utils.parallel;
 
-import at.schrer.utils.parallel.counters.PrimeCounter;
-import at.schrer.utils.parallel.counters.VirtualThreadsPrimeCounter;
+import at.schrer.utils.parallel.counters.*;
 
 import java.util.List;
 import java.util.stream.LongStream;
@@ -16,9 +15,9 @@ public class PrimePerformance {
 
     public static void main(String[] args) {
         var results = Stream.of(
-                simpleLoopPrimeCounter(),
-                streamPrimeCounter(),
-                parallelStreamPrimeCounter(),
+                new SimpleLoopPrimeCounter(),
+                new StreamPrimeCounter(),
+                new ParallelStreamCounter(),
                 new VirtualThreadsPrimeCounter(1),
                 new VirtualThreadsPrimeCounter(2),
                 new VirtualThreadsPrimeCounter(4),
@@ -29,59 +28,6 @@ public class PrimePerformance {
         ).map(it -> it.apply(THRESHOLD)).toList();
 
         printResults(results);
-    }
-
-    public static PrimeCounter simpleLoopPrimeCounter(){
-        return new PrimeCounter() {
-            @Override
-            public String getDisplayName() {
-                return "Simple loop";
-            }
-
-            @Override
-            protected long applyInternal(long max) {
-                long primeCountLoop = 0;
-                for (long i = 2; i <= max; i++) {
-                    if (isPrime(i)) {
-                        primeCountLoop++;
-                    }
-                }
-                return primeCountLoop;
-            }
-        };
-    }
-
-    public static PrimeCounter streamPrimeCounter() {
-        return new PrimeCounter() {
-            @Override
-            public String getDisplayName() {
-                return "Stream";
-            }
-
-            @Override
-            protected long applyInternal(long max) {
-                return LongStream.rangeClosed(2, max)
-                        .filter(this::isPrime)
-                        .count();
-            }
-        };
-    }
-
-    public static PrimeCounter parallelStreamPrimeCounter(){
-        return new PrimeCounter() {
-            @Override
-            public String getDisplayName() {
-                return "Parallel stream";
-            }
-
-            @Override
-            protected long applyInternal(long max) {
-                return LongStream.rangeClosed(2, max)
-                        .parallel()
-                        .filter(this::isPrime)
-                        .count();
-            }
-        };
     }
 
     private static void printResults(List<PrimeCounter.PerfResult> resultList){
