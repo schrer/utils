@@ -1,7 +1,9 @@
 package at.schrer.utils.parallel;
 
+import at.schrer.utils.parallel.counters.PrimeCounter;
+import at.schrer.utils.parallel.counters.VirtualThreadsPrimeCounter;
+
 import java.util.List;
-import java.util.function.LongUnaryOperator;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -10,75 +12,79 @@ import java.util.stream.Stream;
  * The results are not accurate, as the JIT kicks in some cases and has then "prepared" functions for following test cases.
  */
 public class PrimePerformance {
+    private static final long THRESHOLD = 10000000;
+
     public static void main(String[] args) {
-        final long max = 10000000;
-
         var results = Stream.of(
-                new PerfCase("Simple loop", PrimePerformance::simpleLoopPrimeCounter),
-                new PerfCase("Stream", PrimePerformance::streamPrimeCounter),
-                new PerfCase("Parallel stream", PrimePerformance::parallelStreamPrimeCounter),
-                new PerfCase("VThreads x1", new VirtualThreadsPrimeCounter(1)),
-                new PerfCase("VThreads x2", new VirtualThreadsPrimeCounter(2)),
-                new PerfCase("VThreads x4", new VirtualThreadsPrimeCounter(4)),
-                new PerfCase("VThreads x8", new VirtualThreadsPrimeCounter(8)),
-                new PerfCase("VThreads x16", new VirtualThreadsPrimeCounter(16)),
-                new PerfCase("VThreads x20", new VirtualThreadsPrimeCounter(20)),
-                new PerfCase("VThreads x24", new VirtualThreadsPrimeCounter(24))
-        ).map(it -> runCase(it, max)).toList();
+                simpleLoopPrimeCounter(),
+                streamPrimeCounter(),
+                parallelStreamPrimeCounter(),
+                new VirtualThreadsPrimeCounter(1),
+                new VirtualThreadsPrimeCounter(2),
+                new VirtualThreadsPrimeCounter(4),
+                new VirtualThreadsPrimeCounter(8),
+                new VirtualThreadsPrimeCounter(16),
+                new VirtualThreadsPrimeCounter(20),
+                new VirtualThreadsPrimeCounter(24)
+        ).map(it -> it.apply(THRESHOLD)).toList();
 
-        println(results);
+        printResults(results);
     }
 
-    private static PerfResult runCase(PerfCase perfCase, long upperBound){
-        long startTime = System.nanoTime();
-        long resultCount = perfCase.counterFunction().applyAsLong(upperBound);
-        long duration = (System.nanoTime() - startTime);
-        return new PerfResult(perfCase.name(), duration, resultCount);
-    }
-
-    public static Long simpleLoopPrimeCounter(Long max){
-        return simpleLoopPrimeCounter(1, max+1);
-    }
-
-    public static Long simpleLoopPrimeCounter(long start, long endExclusive){
-        long primeCountLoop = 0;
-        for (long i = start; i < endExclusive; i++) {
-            if (isPrime(i)) {
-                primeCountLoop++;
+    public static PrimeCounter simpleLoopPrimeCounter(){
+        return new PrimeCounter() {
+            @Override
+            public String getDisplayName() {
+                return "Simple loop";
             }
-        }
-        return primeCountLoop;
-    }
 
-    public static Long streamPrimeCounter(Long max) {
-        return LongStream.rangeClosed(1, max).filter(PrimePerformance::isPrime).count();
-    }
-
-    public static Long parallelStreamPrimeCounter(Long max){
-        return LongStream.rangeClosed(1, max).parallel().filter(PrimePerformance::isPrime).count();
-    }
-
-
-    public static boolean isPrime(long number){
-        if (number == 2) {
-            return true;
-        }
-        if (number == 1 || number % 2 == 0) {
-            return false;
-        }
-
-        long i = 3;
-
-        while(i <= (long)Math.sqrt(number)) {
-            if(number % i == 0) {
-                return false;
+            @Override
+            protected long applyInternal(long max) {
+                long primeCountLoop = 0;
+                for (long i = 2; i <= max; i++) {
+                    if (isPrime(i)) {
+                        primeCountLoop++;
+                    }
+                }
+                return primeCountLoop;
             }
-            i = i+2;
-        }
-        return true;
+        };
     }
 
-    private static void println(List<PerfResult> resultList){
+    public static PrimeCounter streamPrimeCounter() {
+        return new PrimeCounter() {
+            @Override
+            public String getDisplayName() {
+                return "Stream";
+            }
+
+            @Override
+            protected long applyInternal(long max) {
+                return LongStream.rangeClosed(2, max)
+                        .filter(this::isPrime)
+                        .count();
+            }
+        };
+    }
+
+    public static PrimeCounter parallelStreamPrimeCounter(){
+        return new PrimeCounter() {
+            @Override
+            public String getDisplayName() {
+                return "Parallel stream";
+            }
+
+            @Override
+            protected long applyInternal(long max) {
+                return LongStream.rangeClosed(2, max)
+                        .parallel()
+                        .filter(this::isPrime)
+                        .count();
+            }
+        };
+    }
+
+    private static void printResults(List<PrimeCounter.PerfResult> resultList){
         // Define the column widths
         int nameWidth = 15;
         int durationWidth = 15;
@@ -92,12 +98,8 @@ public class PrimePerformance {
         System.out.println("-".repeat(nameWidth + durationWidth + countWidth + 2));
 
         String lineFormat = "%-" + nameWidth + "s %" + durationWidth + "d %" + countWidth + "s%n";
-        for (PerfResult result : resultList) {
-            System.out.printf(lineFormat, result.name(), result.durationNano(), result.count());
-
+        for (PrimeCounter.PerfResult result : resultList) {
+            System.out.printf(lineFormat, result.counterName(), result.durationNano(), result.count());
         }
     }
-
-    private record PerfResult(String name, long durationNano, long count){}
-    private record PerfCase(String name, LongUnaryOperator counterFunction){}
 }

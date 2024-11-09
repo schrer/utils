@@ -1,4 +1,4 @@
-package at.schrer.utils.parallel;
+package at.schrer.utils.parallel.counters;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,9 +6,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.LongUnaryOperator;
 
-public class VirtualThreadsPrimeCounter implements LongUnaryOperator {
+public class VirtualThreadsPrimeCounter extends PrimeCounter {
 
     private final int numThreads;
 
@@ -17,7 +16,7 @@ public class VirtualThreadsPrimeCounter implements LongUnaryOperator {
     }
 
     @Override
-    public long applyAsLong(long max) {
+    public long applyInternal(long max) {
         long partitionSize = max/numThreads;
         List<Section> sections = new ArrayList<>(numThreads);
         for (int i = 0; i<numThreads; i++) {
@@ -30,7 +29,7 @@ public class VirtualThreadsPrimeCounter implements LongUnaryOperator {
             List<Future<Long>> futures = new ArrayList<>(numThreads);
             for (Section section : sections) {
                 futures.add(executor.submit(
-                        () -> PrimePerformance.simpleLoopPrimeCounter(section.start(), section.end())
+                        () -> simpleLoopPrimeCounter(section.start(), section.end())
                 ));
             }
             long primeCount = 0;
@@ -41,6 +40,21 @@ public class VirtualThreadsPrimeCounter implements LongUnaryOperator {
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private long simpleLoopPrimeCounter(long start, long endExclusive){
+        long primeCountLoop = 0;
+        for (long i = start; i < endExclusive; i++) {
+            if (isPrime(i)) {
+                primeCountLoop++;
+            }
+        }
+        return primeCountLoop;
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "VThreads x" + numThreads;
     }
 
     private record Section(long start, long end){}
