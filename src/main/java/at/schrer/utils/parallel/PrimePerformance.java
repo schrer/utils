@@ -3,7 +3,6 @@ package at.schrer.utils.parallel;
 import at.schrer.utils.parallel.counters.*;
 
 import java.util.List;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
