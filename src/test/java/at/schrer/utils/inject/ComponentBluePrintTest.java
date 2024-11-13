@@ -16,8 +16,8 @@ class ComponentBluePrintTest {
         ComponentBluePrint<NamedDummy> namedBluePrint = new ComponentBluePrint<>(NamedDummy.class);
 
         // Then
-        assertTrue(noNameBluePrint.getComponentAlias().isEmpty());
-        assertTrue(namedBluePrint.getComponentAlias().isPresent());
-        assertEquals(namedDummyName, namedBluePrint.getComponentAlias().get());
+        assertTrue(noNameBluePrint.getBeanAlias().isEmpty());
+        assertTrue(namedBluePrint.getBeanAlias().isPresent());
+        assertEquals(namedDummyName, namedBluePrint.getBeanAlias().get());
     }
 }

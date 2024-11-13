@@ -8,7 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ComponentBluePrint<T> {
+public class ComponentBluePrint<T> implements BeanBluePrint<T>{
     private final List<ComponentConstructor<T>> constructors;
     private final ComponentConstructor<T> noArgConstructor;
     private final Class<T> componentClass;
@@ -33,19 +33,17 @@ public class ComponentBluePrint<T> {
         }
     }
 
-    /**
-     * Checks if the component can be instantiated without any arguments.
-     *
-     * @return true if a no-args constructor is available, false otherwise.
-     */
+    @Override
     public boolean canBeDependencyLess(){
         return noArgConstructor != null;
     }
 
+    @Override
     public boolean isSameClass(Class<?> clazz){
         return this.componentClass == clazz;
     }
 
+    @Override
     public T getNoArgsInstance()
             throws InvocationTargetException, InstantiationException, IllegalAccessException {
         if (noArgConstructor == null) {
@@ -55,6 +53,7 @@ public class ComponentBluePrint<T> {
         return noArgConstructor.getInstance();
     }
 
+    @Override
     public T getInstance(Object... parameters)
             throws ContextException, InvocationTargetException, InstantiationException, IllegalAccessException {
         Optional<ComponentConstructor<T>> constructor = constructors.stream()
@@ -74,7 +73,8 @@ public class ComponentBluePrint<T> {
         return this.componentClass;
     }
 
-    public Optional<String> getComponentAlias() {
+    @Override
+    public Optional<String> getBeanAlias() {
         return Optional.ofNullable(this.componentAlias);
     }
 
