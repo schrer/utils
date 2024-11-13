@@ -1,5 +1,8 @@
 package at.schrer.utils.inject;
 
+import at.schrer.utils.StringUtils;
+import at.schrer.utils.inject.annotations.Component;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -9,6 +12,7 @@ public class ComponentBluePrint<T> {
     private final List<ComponentConstructor<T>> constructors;
     private final ComponentConstructor<T> noArgConstructor;
     private final Class<T> componentClass;
+    private final String componentAlias;
 
     public ComponentBluePrint(Class<T> componentClass) {
         this.componentClass = componentClass;
@@ -21,6 +25,12 @@ public class ComponentBluePrint<T> {
         this.noArgConstructor = constructors.stream()
                 .filter(ComponentConstructor::isDependencyLess)
                 .findAny().orElse(null);
+        String componentName = componentClass.getAnnotation(Component.class).name();
+        if (!StringUtils.isBlank(componentName)) {
+            this.componentAlias = componentName;
+        } else {
+            this.componentAlias = null;
+        }
     }
 
     /**
@@ -62,6 +72,10 @@ public class ComponentBluePrint<T> {
 
     public Class<T> getComponentClass(){
         return this.componentClass;
+    }
+
+    public Optional<String> getComponentAlias() {
+        return Optional.ofNullable(this.componentAlias);
     }
 
     public static class ComponentConstructor<V> {
