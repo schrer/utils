@@ -34,9 +34,9 @@ public class ContextBuilder {
         this.componentGraph = new SomeAcyclicGraph<>();
 
         final ClassScanner classScanner = new ClassScanner(packagePath);
-        List<Class<?>> components = new ArrayList<>();
+        List<Class<?>> components;
         try {
-            components.addAll(classScanner.findByAnnotation(Component.class));
+            components = new ArrayList<>(classScanner.findByAnnotation(Component.class));
         } catch (IOException | URISyntaxException | ClassNotFoundException e) {
             throw new ContextException("Unable to load context.", e);
         }
