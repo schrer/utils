@@ -3,6 +3,7 @@ package at.schrer.utils.inject;
 import at.schrer.utils.inject.dummyclasses.depless.Component1;
 import at.schrer.utils.inject.dummyclasses.depless.Component2;
 import at.schrer.utils.inject.dummyclasses.depless.NonComponent1;
+import at.schrer.utils.inject.dummyclasses.interfaces.*;
 import at.schrer.utils.inject.dummyclasses.yesdeps.DepComp1;
 import at.schrer.utils.inject.dummyclasses.yesdeps.DepComp2;
 import at.schrer.utils.inject.dummyclasses.yesdeps.DepComp4;
@@ -19,6 +20,7 @@ class ContextBuilderTest {
     private static final String YES_DEP_DUMMY_PACKAGE = "at.schrer.utils.inject.dummyclasses.yesdeps";
     private static final String MULTISTEP_CYCLE_DEP_DUMMY_PACKAGE = "at.schrer.utils.inject.dummyclasses.multistepcycle";
     private static final String CYCLE_DEP_DUMMY_PACKAGE = "at.schrer.utils.inject.dummyclasses.cycledep";
+    private static final String INTERFACE_PACKAGE = "at.schrer.utils.inject.dummyclasses.interfaces";
 
     @BeforeEach
     void cleanUpComponentLoaders(){
@@ -125,5 +127,40 @@ class ContextBuilderTest {
         DepComp4 instance = contextBuilder.getComponent(DepComp4.class);
         // Then
         assertNotNull(instance);
+    }
+
+    @Test
+    void loadInterfaceImplementation(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(INTERFACE_PACKAGE);
+        // When
+        SomeInterface instance = contextBuilder.getComponent(SomeInterface.class);
+        // Then
+        assertNotNull(instance);
+        assertEquals(SomeIFImplementation.class, instance.getClass());
+    }
+
+    @Test
+    void loadAbstractClassImplementation(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(INTERFACE_PACKAGE);
+        // When
+        SomeAbstractClass instance = contextBuilder.getComponent(SomeAbstractClass.class);
+        // Then
+        assertNotNull(instance);
+        assertEquals(SomeACImplementation.class, instance.getClass());
+    }
+
+    @Test
+    void loadClassDependentOnInterface(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(INTERFACE_PACKAGE);
+        // When
+        UsesInterface instance = contextBuilder.getComponent(UsesInterface.class);
+        // Then
+        assertNotNull(instance);
+        assertNotNull(instance.getSomeInterface());
+        assertEquals(SomeIFImplementation.class, instance.getSomeInterface().getClass());
+        assertEquals(UsesInterface.class, instance.getClass());
     }
 }

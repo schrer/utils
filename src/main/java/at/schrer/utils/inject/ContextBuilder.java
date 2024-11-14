@@ -89,11 +89,13 @@ public class ContextBuilder {
      * @throws ContextException if the class is not known component within the context or cannot be created for other reasons.
      */
     public <T> T getComponent(Class<T> componentClass) throws ContextException {
-        if (componentInstances.containsKey(componentClass)) {
-            return ((T) componentInstances.get(componentClass));
+        // TODO support names
+        Optional<Class<?>> match = findMatchingClass(componentClass, componentInstances.keySet());
+        if (match.isPresent()) {
+            return ((T) componentInstances.get(match.get()));
         }
 
-        Optional<ComponentBluePrint<Class<?>>> bluePrintOptional = componentGraph.find(it -> it.isSameClass(componentClass));
+        Optional<ComponentBluePrint<Class<?>>> bluePrintOptional = componentGraph.find(it -> it.isMatchingClass(componentClass));
         if (bluePrintOptional.isEmpty()) {
             throw new ContextException("Class not in context: " + componentClass.getName());
         }
@@ -180,7 +182,7 @@ public class ContextBuilder {
         List<Class<?>> dependencies = constructor.getDependencies();
         List<ComponentBluePrint<Class<?>>> deps = dependencies.stream()
                 .map(dep -> componentGraph.find(
-                        it -> it.isSameClass(dep)
+                        it -> it.isMatchingClass(dep)
                 ).orElse(null))
                 .filter(Objects::nonNull)
                 .toList();
@@ -189,5 +191,11 @@ public class ContextBuilder {
             return Optional.of(deps);
         }
         return Optional.empty();
+    }
+
+    private Optional<Class<?>> findMatchingClass(Class<?> clazz, Collection<Class<?>> available){
+        return available.stream()
+                .filter(clazz::isAssignableFrom)
+                .findFirst();
     }
 }

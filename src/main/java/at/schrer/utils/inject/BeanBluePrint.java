@@ -13,6 +13,8 @@ public interface BeanBluePrint<T> {
      */
     boolean canBeDependencyLess();
 
+    boolean isMatchingClass(Class<?> clazz);
+
     boolean isSameClass(Class<?> clazz);
 
     T getNoArgsInstance()

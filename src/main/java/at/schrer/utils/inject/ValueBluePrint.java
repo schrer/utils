@@ -25,6 +25,11 @@ public class ValueBluePrint<T> implements BeanBluePrint<T> {
     }
 
     @Override
+    public boolean isMatchingClass(Class<?> clazz) {
+        return clazz.isAssignableFrom(this.valueClass);
+    }
+
+    @Override
     public boolean isSameClass(Class<?> clazz) {
         return this.valueClass == clazz;
     }

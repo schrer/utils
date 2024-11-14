@@ -43,6 +43,10 @@ public class ComponentBluePrint<T> implements BeanBluePrint<T>{
         return this.componentClass == clazz;
     }
 
+    public boolean isMatchingClass(Class<?> clazz){
+        return clazz.isAssignableFrom(this.componentClass);
+    }
+
     @Override
     public T getNoArgsInstance()
             throws InvocationTargetException, InstantiationException, IllegalAccessException {
@@ -102,8 +106,40 @@ public class ComponentBluePrint<T> implements BeanBluePrint<T>{
                     .map(Object::getClass)
                     .collect(Collectors.toSet());
             return providedParamClasses.size() == dependencies.size()
-                    && dependencies.containsAll(providedParamClasses)
-                    && providedParamClasses.containsAll(dependencies);
+                    && containsAllMatchingClasses(providedParamClasses, dependencies)
+                    && containsAllMatchingInterfaces(dependencies, providedParamClasses);
+        }
+
+        private boolean containsAllMatchingClasses(Collection<Class<?>> providedClasses, Collection<Class<?>> lookingForInterfaces){
+            for (Class<?> iFace : lookingForInterfaces) {
+                boolean iFaceImplementationFound = false;
+                for (Class<?> clazz : providedClasses) {
+                    if (iFace.isAssignableFrom(clazz)) {
+                        iFaceImplementationFound = true;
+                        break;
+                    }
+                }
+                if (!iFaceImplementationFound) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private boolean containsAllMatchingInterfaces(Collection<Class<?>> providedInterfaces, Collection<Class<?>> lookingForClasses){
+            for (Class<?> clazz : lookingForClasses) {
+                boolean topClassFound = false;
+                for (Class<?> iFace : providedInterfaces) {
+                    if (iFace.isAssignableFrom(clazz)) {
+                        topClassFound = true;
+                        break;
+                    }
+                }
+                if (!topClassFound) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public V getInstance(Object... parameters)
