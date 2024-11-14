@@ -163,4 +163,19 @@ class ContextBuilderTest {
         assertEquals(SomeIFImplementation.class, instance.getSomeInterface().getClass());
         assertEquals(UsesInterface.class, instance.getClass());
     }
+
+    @Test
+    void loadDepsDeep(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(INTERFACE_PACKAGE);
+        // When
+        DepsDeep instance = contextBuilder.getComponent(DepsDeep.class);
+        // Then
+        assertNotNull(instance);
+        assertNotNull(instance.getSomeInterface());
+        assertNotNull(instance.getSomeAbstractClass());
+        assertNotNull(instance.getDepsOnIFAndAC());
+        assertNotNull(instance.getDepsOnIFAndAC().getSomeAbstractClass());
+        assertNotNull(instance.getDepsOnIFAndAC().getSomeInterface());
+    }
 }
