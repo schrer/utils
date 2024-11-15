@@ -178,4 +178,26 @@ class ContextBuilderTest {
         assertNotNull(instance.getDepsOnIFAndAC().getSomeAbstractClass());
         assertNotNull(instance.getDepsOnIFAndAC().getSomeInterface());
     }
+
+    @Test
+    void injectEqualsDirectCreation(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(YES_DEP_DUMMY_PACKAGE);
+        // When
+        DepComp2 depComp2 = contextBuilder.getComponent(DepComp2.class);
+        DepComp1 depComp1 = contextBuilder.getComponent(DepComp1.class);
+        // Then
+        assertEquals(depComp1, depComp2.getDep());
+    }
+
+    @Test
+    void injectEqualsDirectCreationOtherDirection(){
+        // Given
+        ContextBuilder contextBuilder = ContextBuilder.getContextInstance(YES_DEP_DUMMY_PACKAGE);
+        // When
+        DepComp1 depComp1 = contextBuilder.getComponent(DepComp1.class);
+        DepComp2 depComp2 = contextBuilder.getComponent(DepComp2.class);
+        // Then
+        assertEquals(depComp1, depComp2.getDep());
+    }
 }

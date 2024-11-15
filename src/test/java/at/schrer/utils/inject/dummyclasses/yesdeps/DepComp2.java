@@ -10,4 +10,8 @@ public class DepComp2 {
     public DepComp2(DepComp1 dep) {
         this.dep = dep;
     }
+
+    public DepComp1 getDep() {
+        return dep;
+    }
 }

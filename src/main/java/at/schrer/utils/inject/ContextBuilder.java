@@ -4,7 +4,6 @@ import at.schrer.utils.inject.annotations.Component;
 import at.schrer.utils.structures.SomeAcyclicGraph;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,6 +28,7 @@ public class ContextBuilder {
 
     private final SomeAcyclicGraph<ComponentBluePrint<Class<?>>> componentGraph;
 
+    // TODO support several package paths
     private ContextBuilder(String packagePath) throws ContextException {
         this.componentInstances = new HashMap<>();
         this.componentGraph = new SomeAcyclicGraph<>();
@@ -90,9 +90,9 @@ public class ContextBuilder {
      */
     public <T> T getComponent(Class<T> componentClass) throws ContextException {
         // TODO support names
-        Optional<Class<?>> match = findMatchingClass(componentClass, componentInstances.keySet());
+        Optional<Object> match = findMatchingInstance(componentClass);
         if (match.isPresent()) {
-            return ((T) componentInstances.get(match.get()));
+            return (T) match.get();
         }
 
         Optional<ComponentBluePrint<Class<?>>> bluePrintOptional = componentGraph.find(it -> it.isMatchingClass(componentClass));
@@ -100,27 +100,77 @@ public class ContextBuilder {
             throw new ContextException("Class not in context: " + componentClass.getName());
         }
 
-        var bluePrint = bluePrintOptional.get();
-        try {
-            T instance;
-            if (bluePrint.canBeDependencyLess()) {
-                instance = (T) bluePrint.getNoArgsInstance();
-            } else {
-                Set<ComponentBluePrint<Class<?>>> outbounds = componentGraph.getOutbounds(bluePrint);
+        ComponentBluePrint<Class<?>> bluePrint = bluePrintOptional.get();
 
-                // TODO make this non-recursive
-                Object[] dependencyInstances = outbounds.stream()
-                        .map(ComponentBluePrint::getComponentClass)
-                        .map(this::getComponent)
-                        .toArray();
-                instance = (T) bluePrint.getInstance(dependencyInstances);
+        if (bluePrint.canBeDependencyLess()) {
+            Object instance = bluePrint.getNoArgsInstance();
+            componentInstances.put(instance.getClass(), instance);
+        }
+
+        Deque<ComponentBluePrint<Class<?>>> stack = new LinkedList<>();
+
+        // Initialize stack with the root blueprint
+        stack.push(bluePrint);
+
+        try {
+            while (!stack.isEmpty()) {
+                ComponentBluePrint<Class<?>> current = stack.peek();
+
+                Class<?> currentClass = current.getComponentClass();
+                Optional<Object> currentMatch = findMatchingInstance(currentClass);
+                if (currentMatch.isPresent()) {
+                    // Instance of blueprint already available
+                    stack.pop();
+                    continue;
+                }
+
+                // Get dependencies of the current blueprint
+                Set<ComponentBluePrint<Class<?>>> outbounds = componentGraph.getOutbounds(current);
+                boolean allDependenciesResolved = true;
+
+                for (ComponentBluePrint<Class<?>> dependency : outbounds) {
+                    Class<?> depClass = dependency.getComponentClass();
+                    Optional<Object> depMatch = findMatchingInstance(depClass);
+                    if (depMatch.isPresent()) {
+                        // Dependency already available
+                        continue;
+                    }
+
+                    if (dependency.canBeDependencyLess()) {
+                        Object instance = dependency.getNoArgsInstance();
+                        componentInstances.put(instance.getClass(), instance);
+                    } else {
+                        Optional<Object> depInstanceOpt = buildIfPossible(dependency);
+                        if (depInstanceOpt.isPresent()){
+                            Object instance = depInstanceOpt.get();
+                            componentInstances.put(instance.getClass(), instance);
+                        } else {
+                            stack.push(dependency); // Push unresolved dependency onto the stack
+                            allDependenciesResolved = false;
+                        }
+                    }
+                }
+
+                if (allDependenciesResolved) {
+                    // Create instance for the current blueprint
+                    Optional<Object> instanceOpt = buildIfPossible(current);
+                    if (instanceOpt.isEmpty()) {
+                        throw new ContextException("Failed to instantiate " + current.getComponentClass() + ". This is a bug.");
+                    }
+                    Object instance = instanceOpt.get();
+
+                    componentInstances.put(instance.getClass(), instance);
+                }
             }
-            componentInstances.put(componentClass, instance);
-            return instance;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+
+            // Store the resolved instance for the requested class
+            return (T) findMatchingInstance(bluePrint.getComponentClass()).get();
+        } catch (ComponentInstantiationException e) {
             throw new ContextException("Failed to create instance of class " + componentClass.getName(), e);
         }
     }
+
+
 
     /**
      * Get a ContextBuilder instance for the given package.
@@ -193,9 +243,29 @@ public class ContextBuilder {
         return Optional.empty();
     }
 
-    private Optional<Class<?>> findMatchingClass(Class<?> clazz, Collection<Class<?>> available){
-        return available.stream()
-                .filter(clazz::isAssignableFrom)
+    private Optional<Object> findMatchingInstance(Class<?> clazz){
+        return componentInstances.values().stream()
+                .filter(it -> clazz.isAssignableFrom(it.getClass()))
                 .findFirst();
+    }
+
+    private Optional<Object> buildIfPossible(ComponentBluePrint<Class<?>> blueprint) throws ComponentInstantiationException {
+        if(blueprint.canBeDependencyLess()) {
+            return Optional.of(blueprint.getNoArgsInstance());
+        }
+
+        List<ComponentBluePrint.ComponentConstructor<Class<?>>> constructors = blueprint.getConstructors();
+        for (var constructor : constructors) {
+            List<Class<?>> dependencies = constructor.getDependencies();
+            List<Object> instances = dependencies.stream()
+                    .map(this::findMatchingInstance)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toList();
+            if (instances.size() == dependencies.size()) {
+                return Optional.of(constructor.getInstance(instances.toArray()));
+            }
+        }
+        return Optional.empty();
     }
 }

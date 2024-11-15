@@ -48,23 +48,21 @@ public class ComponentBluePrint<T> implements BeanBluePrint<T>{
     }
 
     @Override
-    public T getNoArgsInstance()
-            throws InvocationTargetException, InstantiationException, IllegalAccessException {
+    public T getNoArgsInstance() throws ComponentInstantiationException {
         if (noArgConstructor == null) {
-            throw new InstantiationException("No argument-less constructor available for this class.");
+            throw new ComponentInstantiationException("No argument-less constructor available for this class.");
         }
 
         return noArgConstructor.getInstance();
     }
 
     @Override
-    public T getInstance(Object... parameters)
-            throws ContextException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public T getInstance(Object... parameters) throws ComponentInstantiationException {
         Optional<ComponentConstructor<T>> constructor = constructors.stream()
                 .filter(it -> it.matchesParameters(parameters))
                 .findFirst();
         if (constructor.isEmpty()) {
-            throw new ContextException("No matching constructor found for parameters");
+            throw new ComponentInstantiationException("No matching constructor found for parameters");
         }
         return constructor.get().getInstance(parameters);
     }
@@ -142,17 +140,20 @@ public class ComponentBluePrint<T> implements BeanBluePrint<T>{
             return true;
         }
 
-        public V getInstance(Object... parameters)
-                throws InvocationTargetException, InstantiationException, IllegalAccessException {
+        public V getInstance(Object... parameters) {
             if (parameters.length > 1) {
                 parameters = sortMethodParameters(parameters, constructor.getParameterTypes());
             }
-            return constructor.newInstance(parameters);
+            try {
+                return constructor.newInstance(parameters);
+            } catch (InstantiationException|IllegalAccessException|InvocationTargetException e) {
+                throw new ComponentInstantiationException(e);
+            }
         }
 
         private Object[] sortMethodParameters(Object[] parameters, Class<?>[] typesInOrder){
             if (parameters.length != typesInOrder.length) {
-                throw new IllegalArgumentException("Wrong number of parameters given for this constructor.");
+                throw new ComponentInstantiationException("Wrong number of parameters given for this constructor.");
             }
             Object[] sortedParameters = new Object[typesInOrder.length];
             for(int i = 0; i < typesInOrder.length; i++) {
@@ -163,7 +164,7 @@ public class ComponentBluePrint<T> implements BeanBluePrint<T>{
                     }
                 }
                 if (sortedParameters[i] == null) {
-                    throw new IllegalArgumentException("Instance of class " + target + " is missing as provided parameter.");
+                    throw new ComponentInstantiationException("Instance of class " + target + " is missing as provided parameter.");
                 }
             }
             return sortedParameters;
